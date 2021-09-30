@@ -2,8 +2,8 @@ import React from "react";
 
 export default class Workspace extends React.Component {
     render() {
+        let key = 1;
         if (this.props.currentList !== null) {
-            console.log(this.props.currentList);
             return (
                 <div id="top5-workspace">
                     <div id="workspace-edit">
@@ -16,7 +16,7 @@ export default class Workspace extends React.Component {
                         </div>
                         <div id='edit-items'>
                             {this.props.currentList.items.map((item) => (
-                                <div className='top5-item'>{item}</div>
+                                <div key={'item-' + key++} className='top5-item'>{item}</div>
                             ))};
                         </div>
                     </div>
