@@ -11,6 +11,18 @@ import Sidebar from './components/Sidebar.js'
 import Workspace from './components/Workspace.js';
 import Statusbar from './components/Statusbar.js'
 
+/**
+Editable Items - one should be able to change the text for any item via a text field by double clicking on the item. One can then click away or press Enter to finalize that change.
+Item Drag and Drop - the items should be rearrangeable via dragging, just as in HW 1.
+Drag Guidance - when dragging an item, the container into which the dragged item is above should be green to denote that you can place it there. Note, only one container can be such and if we are not dragging over a container, no items should be green.
+List Deletion - should the user press one of the delete buttons on a list card a modal opens up prompting the user if they wish to delete the list. Change it so that when the user presses Confirm the modal closes and the list is permanently deleted. Note, you need to make sure that the lists are always listed in alphabetical order by name.
+Undo/Redo - Undo/Redo should also work using Control-Z and Control-Y.
+Closing a List - pressing the close list button will simply close the list currently being edited.
+List Saving - after every single edit, data should be saved to local storage. Remember to also save session data when necessary, like when a list is deleted.
+Foolproof Design - make sure the undo, redo, and close buttons are only enabled when they are usable. When disabled, they should look faded (use transparency) and should not be clickable.
+Version Control - make sure you use Git for the full duration of the project. Make commits at least for each completed task. You should be ready to show the TA a commit for each task you wish to receive points for.
+ */
+
 class App extends React.Component {
     constructor(props) {
         super(props);
@@ -117,6 +129,7 @@ class App extends React.Component {
     }
     // THIS FUNCTION BEGINS THE PROCESS OF CLOSING THE CURRENT LIST
     closeCurrentList = () => {
+        console.log('closing current list...');
         this.setState(prevState => ({
             currentList: null,
             listKeyPairMarkedForDeletion : prevState.listKeyPairMarkedForDeletion,
@@ -166,7 +179,7 @@ class App extends React.Component {
             <div id="app-root">
                 <Banner 
                     title='Top 5 Lister'
-                    closeCallback={this.closeCurrentList} />
+                    closeCallback={this.closeCurrentList}/>
                 <Sidebar
                     heading='Your Lists'
                     currentList={this.state.currentList}
