@@ -24,7 +24,8 @@ class App extends React.Component {
         // SETUP THE INITIAL STATE
         this.state = {
             currentList : null,
-            sessionData : loadedSessionData
+            sessionData : loadedSessionData,
+            keyNamePairToDelete: null
         }
     }
     sortKeyNamePairsByName = (keyNamePairs) => {
@@ -124,11 +125,15 @@ class App extends React.Component {
             // ANY AFTER EFFECTS?
         });
     }
-    deleteList = () => {
+    deleteList = (keyNamePair) => {
         // SOMEHOW YOU ARE GOING TO HAVE TO FIGURE OUT
         // WHICH LIST IT IS THAT THE USER WANTS TO
         // DELETE AND MAKE THAT CONNECTION SO THAT THE
-        // NAME PROPERLY DISPLAYS INSIDE THE MODAL
+        // NAME PROPERLY DISPLAYS INSIDE THE MODAL 
+        this.setState(prevState => ({
+            sessionData: prevState.sessionData,
+            keyNamePairToDelete: keyNamePair
+        }));   
         this.showDeleteListModal();
     }
     // THIS FUNCTION SHOWS THE MODAL FOR PROMPTING THE USER
@@ -137,6 +142,20 @@ class App extends React.Component {
         let modal = document.getElementById("delete-modal");
         modal.classList.add("is-visible");
     }
+
+    deleteCurrentList = () => {
+        console.log(this.state.keyNamePairToDelete);
+        this.db.mutationDeleteList(this.state.keyNamePairToDelete.key);
+        let newSessionData = this.db.queryGetSessionData();
+        
+        this.setState(prevState => ({
+            currentList: null,
+            sessionData: newSessionData,
+            keyNamePairToDelete: null
+        }));   
+        this.hideDeleteListModal();
+    }
+
     // THIS FUNCTION IS FOR HIDING THE MODAL
     hideDeleteListModal() {
         let modal = document.getElementById("delete-modal");
@@ -162,7 +181,9 @@ class App extends React.Component {
                 <Statusbar 
                     currentList={this.state.currentList} />
                 <DeleteModal
+                    listKeyPair={this.state.keyNamePairToDelete}
                     hideDeleteListModalCallback={this.hideDeleteListModal}
+                    deleteCurrentList={this.deleteCurrentList}
                 />
             </div>
         );
