@@ -6,7 +6,7 @@ export default class ListCard extends React.Component {
 
         this.state = {
             text: this.props.keyNamePair.name,
-            editActive: false,
+            editActive: false
         }
     }
     handleClick = (event) => {

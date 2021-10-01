@@ -15,12 +15,9 @@ import Statusbar from './components/Statusbar.js'
 Editable Items - one should be able to change the text for any item via a text field by double clicking on the item. One can then click away or press Enter to finalize that change.
 Item Drag and Drop - the items should be rearrangeable via dragging, just as in HW 1.
 Drag Guidance - when dragging an item, the container into which the dragged item is above should be green to denote that you can place it there. Note, only one container can be such and if we are not dragging over a container, no items should be green.
-List Deletion - should the user press one of the delete buttons on a list card a modal opens up prompting the user if they wish to delete the list. Change it so that when the user presses Confirm the modal closes and the list is permanently deleted. Note, you need to make sure that the lists are always listed in alphabetical order by name.
 Undo/Redo - Undo/Redo should also work using Control-Z and Control-Y.
-Closing a List - pressing the close list button will simply close the list currently being edited.
 List Saving - after every single edit, data should be saved to local storage. Remember to also save session data when necessary, like when a list is deleted.
 Foolproof Design - make sure the undo, redo, and close buttons are only enabled when they are usable. When disabled, they should look faded (use transparency) and should not be clickable.
-Version Control - make sure you use Git for the full duration of the project. Make commits at least for each completed task. You should be ready to show the TA a commit for each task you wish to receive points for.
  */
 
 class App extends React.Component {
@@ -35,8 +32,8 @@ class App extends React.Component {
 
         // SETUP THE INITIAL STATE
         this.state = {
-            currentList : null,
-            sessionData : loadedSessionData,
+            currentList: null,
+            sessionData: loadedSessionData,
             keyNamePairToDelete: null
         }
     }
@@ -117,6 +114,15 @@ class App extends React.Component {
             this.db.mutationUpdateSessionData(this.state.sessionData);
         });
     }
+
+    renameItem = (id, newName) => {
+        console.log('Renaming: id=' + id + ', newName=' + newName);
+        let currentList = this.state.currentList;
+        let index = parseInt(id.slice(-1));
+        currentList.items[index] = newName;
+        this.db.mutationUpdateList(currentList);
+    }
+
     // THIS FUNCTION BEGINS THE PROCESS OF LOADING A LIST FOR EDITING
     loadList = (key) => {
         let newCurrentList = this.db.queryGetList(key);
@@ -125,6 +131,8 @@ class App extends React.Component {
             sessionData: prevState.sessionData
         }), () => {
             // ANY AFTER EFFECTS?
+            // Enable Close List Button
+            // CLear Undo/Redo Transactions
         });
     }
     // THIS FUNCTION BEGINS THE PROCESS OF CLOSING THE CURRENT LIST
@@ -132,10 +140,14 @@ class App extends React.Component {
         console.log('closing current list...');
         this.setState(prevState => ({
             currentList: null,
-            listKeyPairMarkedForDeletion : prevState.listKeyPairMarkedForDeletion,
+            listKeyPairMarkedForDeletion: prevState.listKeyPairMarkedForDeletion,
             sessionData: this.state.sessionData
         }), () => {
             // ANY AFTER EFFECTS?
+            /*
+            Yes we want to disbale the close and redo/undo button
+            
+            */
         });
     }
     deleteList = (keyNamePair) => {
@@ -146,7 +158,7 @@ class App extends React.Component {
         this.setState(prevState => ({
             sessionData: prevState.sessionData,
             keyNamePairToDelete: keyNamePair
-        }));   
+        }));
         this.showDeleteListModal();
     }
     // THIS FUNCTION SHOWS THE MODAL FOR PROMPTING THE USER
@@ -160,12 +172,12 @@ class App extends React.Component {
         console.log(this.state.keyNamePairToDelete);
         this.db.mutationDeleteList(this.state.keyNamePairToDelete.key);
         let newSessionData = this.db.queryGetSessionData();
-        
+
         this.setState(prevState => ({
             currentList: null,
             sessionData: newSessionData,
             keyNamePairToDelete: null
-        }));   
+        }));
         this.hideDeleteListModal();
     }
 
@@ -177,9 +189,9 @@ class App extends React.Component {
     render() {
         return (
             <div id="app-root">
-                <Banner 
+                <Banner
                     title='Top 5 Lister'
-                    closeCallback={this.closeCurrentList}/>
+                    closeCallback={this.closeCurrentList} />
                 <Sidebar
                     heading='Your Lists'
                     currentList={this.state.currentList}
@@ -190,9 +202,12 @@ class App extends React.Component {
                     renameListCallback={this.renameList}
                 />
                 <Workspace
-                    currentList={this.state.currentList} />
-                <Statusbar 
-                    currentList={this.state.currentList} />
+                    currentList={this.state.currentList} 
+                    renameItemCallback={this.renameItem}
+                />
+                <Statusbar
+                    currentList={this.state.currentList}
+                />
                 <DeleteModal
                     listKeyPair={this.state.keyNamePairToDelete}
                     hideDeleteListModalCallback={this.hideDeleteListModal}

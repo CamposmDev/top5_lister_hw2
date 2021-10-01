@@ -1,8 +1,9 @@
 import React from "react";
+import ItemCard from './ItemCard';
 
 export default class Workspace extends React.Component {
     render() {
-        let key = 1;
+        let key = 0;
         if (this.props.currentList !== null) {
             return (
                 <div id="top5-workspace">
@@ -16,12 +17,17 @@ export default class Workspace extends React.Component {
                         </div>
                         <div id='edit-items'>
                             {this.props.currentList.items.map((item) => (
-                                <div key={'item-' + key++} className='top5-item'>{item}</div>
+                                <ItemCard
+                                    key={item} // Weird :(
+                                    id={'item-' + key++}
+                                    text={item}
+                                    renameItemCallback={this.props.renameItemCallback}
+                                />
                             ))};
                         </div>
                     </div>
                 </div>
-            )
+            );
         }
         return (
             <div id="top5-workspace">
@@ -35,6 +41,6 @@ export default class Workspace extends React.Component {
                     </div>
                 </div>
             </div>
-        )
+        );
     }
 }

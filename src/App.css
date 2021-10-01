@@ -200,6 +200,16 @@ body {
   height:20%;
 }
 
+.top5-item-edit {
+  display: flex;
+  align-items: center;
+  font-size: 18pt;
+  margin: 10px;
+  padding: 20px;
+  border-radius: 25px;
+  width: inherit;
+}
+
 .item-number {
   justify-content: center;
   width:100%;
