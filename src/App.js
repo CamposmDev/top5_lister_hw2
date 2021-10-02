@@ -239,11 +239,14 @@ class App extends React.Component {
         console.log(this.state.keyNamePairToDelete);
         this.db.mutationDeleteList(this.state.keyNamePairToDelete.key);
         let newSessionData = this.db.queryGetSessionData();
-
+        this.tps.clearAllTransactions();
         this.setState(prevState => ({
             currentList: null,
             sessionData: newSessionData,
-            keyNamePairToDelete: null
+            keyNamePairToDelete: null,
+            btUndoFlag: this.tps.hasTransactionToUndo(),
+            btRedoFlag: this.tps.hasTransactionToRedo(),
+            btCloseFlag: false
         }));
         this.hideDeleteListModal();
     }
