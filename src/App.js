@@ -10,14 +10,18 @@ import Banner from './components/Banner.js'
 import Sidebar from './components/Sidebar.js'
 import Workspace from './components/Workspace.js';
 import Statusbar from './components/Statusbar.js'
+import jsTPS from './transactions/jsTPS';
+import ChangeItem_Transaction from './transactions/ChangeItem_Transaction';
+import MoveItem_Transaction from './transactions/MoveItem_Transaction';
 
 /**
-Editable Items - one should be able to change the text for any item via a text field by double clicking on the item. One can then click away or press Enter to finalize that change.
 Item Drag and Drop - the items should be rearrangeable via dragging, just as in HW 1.
-Drag Guidance - when dragging an item, the container into which the dragged item is above should be green to denote that you can place it there. Note, only one container can be such and if we are not dragging over a container, no items should be green.
 Undo/Redo - Undo/Redo should also work using Control-Z and Control-Y.
 List Saving - after every single edit, data should be saved to local storage. Remember to also save session data when necessary, like when a list is deleted.
 Foolproof Design - make sure the undo, redo, and close buttons are only enabled when they are usable. When disabled, they should look faded (use transparency) and should not be clickable.
+
+
+Drag Guidance - when dragging an item, the container into which the dragged item is above should be green to denote that you can place it there. Note, only one container can be such and if we are not dragging over a container, no items should be green.
  */
 
 class App extends React.Component {
@@ -26,6 +30,7 @@ class App extends React.Component {
 
         // THIS WILL TALK TO LOCAL STORAGE
         this.db = new DBManager();
+        this.tps = new jsTPS();
 
         // GET THE SESSION DATA FROM OUR DATA MANAGER
         let loadedSessionData = this.db.queryGetSessionData();
@@ -34,7 +39,10 @@ class App extends React.Component {
         this.state = {
             currentList: null,
             sessionData: loadedSessionData,
-            keyNamePairToDelete: null
+            keyNamePairToDelete: null,
+            btUndoFlag: false,
+            btRedoFlag: false,
+            btCloseFlag: false,
         }
     }
     sortKeyNamePairsByName = (keyNamePairs) => {
@@ -115,39 +123,98 @@ class App extends React.Component {
         });
     }
 
-    renameItem = (id, newName) => {
-        console.log('Renaming: id=' + id + ', newName=' + newName);
-        let currentList = this.state.currentList;
+    changeItem = (list, index, newName) => {
+        list.items[index] = newName;
+        this.db.mutationUpdateList(list); // Save this change
+    }
+
+    changeItemHandler = (id, newName) => {
+        let list = this.state.currentList;
         let index = parseInt(id.slice(-1));
-        currentList.items[index] = newName;
-        this.db.mutationUpdateList(currentList);
+        console.log(index);
+        let oldName = list.items[index];
+
+        // Add ChangeItem_Transaction
+        let transaciton = new ChangeItem_Transaction(this.changeItem, list, index, oldName, newName);
+
+        this.tps.addTransaction(transaciton);
+        
+
+        this.setState(ps => ({
+            btUndoFlag: this.tps.hasTransactionToUndo(),
+            btRedoFlag: this.tps.hasTransactionToRedo()
+        }));
+        // Update View
+    }
+
+    moveItem = (list, oldIndex, newIndex) => {
+        list.items.splice(newIndex, 0, list.items.splice(oldIndex, 1)[0]);
+        this.db.mutationUpdateList(list); // Save this change
+    }
+
+    moveItemHandler = (oldId, newId) => {
+        let list = this.state.currentList;
+        let oldIndex = parseInt(oldId.slice(-1));
+        let newIndex = parseInt(newId.slice(-1));
+        let transaction = new MoveItem_Transaction(this.moveItem, list, oldIndex, newIndex);
+
+        this.tps.addTransaction(transaction);
+
+        this.setState(ps => ({
+            btUndoFlag: this.tps.hasTransactionToUndo(),
+            btRedoFlag: this.tps.hasTransactionToRedo()
+        }));
+    }
+
+    undoHandler = () => {
+        console.log(this.tps.hasTransactionToUndo());
+        if (this.tps.hasTransactionToUndo) {
+            this.tps.undoTransaction();
+            
+            this.setState(ps => ({
+                currentList: ps.currentList,
+                btUndoFlag: this.tps.hasTransactionToUndo(),
+                btRedoFlag: this.tps.hasTransactionToRedo()
+            }));
+        }
+    }
+
+    redoHandler = () => {
+        console.log(this.tps.hasTransactionToRedo());
+        if (this.tps.hasTransactionToRedo()) {
+            this.tps.doTransaction();
+
+            this.setState(ps => ({
+                currentList: ps.currentList,
+                btUndoFlag: this.tps.hasTransactionToUndo(),
+                btRedoFlag: this.tps.hasTransactionToRedo()
+            }));
+        }
     }
 
     // THIS FUNCTION BEGINS THE PROCESS OF LOADING A LIST FOR EDITING
     loadList = (key) => {
         let newCurrentList = this.db.queryGetList(key);
+        this.tps.clearAllTransactions();
         this.setState(prevState => ({
             currentList: newCurrentList,
-            sessionData: prevState.sessionData
-        }), () => {
-            // ANY AFTER EFFECTS?
-            // Enable Close List Button
-            // CLear Undo/Redo Transactions
-        });
+            sessionData: prevState.sessionData,
+            btUndoFlag: this.tps.hasTransactionToUndo(),
+            btRedoFlag: this.tps.hasTransactionToRedo(),
+            btCloseFlag: true
+        }));
     }
     // THIS FUNCTION BEGINS THE PROCESS OF CLOSING THE CURRENT LIST
     closeCurrentList = () => {
-        console.log('closing current list...');
         this.setState(prevState => ({
             currentList: null,
             listKeyPairMarkedForDeletion: prevState.listKeyPairMarkedForDeletion,
-            sessionData: this.state.sessionData
+            sessionData: this.state.sessionData,
+            btUndoFlag: false,
+            btRedoFlag: false,
+            btCloseFlag: false
         }), () => {
-            // ANY AFTER EFFECTS?
-            /*
-            Yes we want to disbale the close and redo/undo button
-            
-            */
+            this.tps.clearAllTransactions();
         });
     }
     deleteList = (keyNamePair) => {
@@ -186,11 +253,28 @@ class App extends React.Component {
         let modal = document.getElementById("delete-modal");
         modal.classList.remove("is-visible");
     }
+
+    keyInputHandler = (event) => {
+        if (event.ctrlKey) {
+            if (event.key === 'z') { // Undo
+                this.undoHandler();
+            } else if (event.key === 'y') {
+                this.redoHandler();
+            }  
+        }
+    }
+
     render() {
+        window.addEventListener('keydown', this.keyInputHandler);
         return (
             <div id="app-root">
                 <Banner
                     title='Top 5 Lister'
+                    btUndoFlag={this.state.btUndoFlag}
+                    btRedoFlag={this.state.btRedoFlag}
+                    btCloseFlag={this.state.btCloseFlag}
+                    undoCallback={this.undoHandler}
+                    redoCallback={this.redoHandler}
                     closeCallback={this.closeCurrentList} />
                 <Sidebar
                     heading='Your Lists'
@@ -203,7 +287,8 @@ class App extends React.Component {
                 />
                 <Workspace
                     currentList={this.state.currentList} 
-                    renameItemCallback={this.renameItem}
+                    moveItemCallback={this.moveItemHandler}
+                    renameItemCallback={this.changeItemHandler}
                 />
                 <Statusbar
                     currentList={this.state.currentList}

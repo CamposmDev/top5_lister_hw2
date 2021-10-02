@@ -18,9 +18,10 @@ export default class Workspace extends React.Component {
                         <div id='edit-items'>
                             {this.props.currentList.items.map((item) => (
                                 <ItemCard
-                                    key={item} // Weird :(
+                                    key={key + '-' + item} // Weird :(
                                     id={'item-' + key++}
                                     text={item}
+                                    moveItemCallback={this.props.moveItemCallback}
                                     renameItemCallback={this.props.renameItemCallback}
                                 />
                             ))};
