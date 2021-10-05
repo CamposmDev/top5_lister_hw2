@@ -89,7 +89,6 @@ export default class ItemCard extends React.Component {
         return (
             <div
                 className={this.state.className}
-                // className='top5-item'
                 key={this.state.id}
                 onClick={this.handleClick}
                 draggable='true'
